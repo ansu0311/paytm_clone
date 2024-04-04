@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { SubHeading } from "../Components/SubHeading";
-import { Heading } from "../Components/Heading";
-import { BottomWarning } from "../Components/BottomWarning";
-import { Button } from "../Components/Button";
+import { ButtonSmall } from "../Components/Button";
 import { InputBox } from "../Components/InputBox";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import union from "../assets/signin/Union.svg";
+import subtract from "../assets/signin/Subtract.svg";
+import buttonCut from "../assets/signin/button.svg";
+import logo from "../assets/logo/flux-light.svg";
 
 const Signup = () => {
 
@@ -28,7 +29,7 @@ const Signup = () => {
         }
       }).then((res)=>{
         setFirstNameUser(res.data.firstName)
-        navigate("/Dashboard")
+        navigate("/Home")
       }).catch(err =>{
         localStorage.removeItem("token");
       })
@@ -36,17 +37,30 @@ const Signup = () => {
     }
 
   return (
-    <div className="bg-slate-300 h-screen flex justify-center">
-      <div className="flex flex-col justify-center">
-        <div className="rounded-lg bg-white w-80 text-center p-2 h-max px-4">
-          <Heading label={"Sign up"} />
-          <SubHeading label={"Enter your infromation to create an account"} />
-          <InputBox onChange={(e) => setFirstName(e.target.value)} placeholder="First Name" />
+    <div className="bg-teal-900 h-screen flex">
+      <div className="grid grid-cols-2 w-screen">
+        <div className="col-span-1 flex">
+          <div className="flex flex-col justify-center z-10">
+            <img src={logo} alt="logo" className="w-24 absolute top-6 left-6" />
+            <div className=" ml-5 w-1/2 text-white text-6xl font-bold">Send money as easily as sending a text</div>
+          </div>
+        </div>
+        <div className=" col-span-1 flex justify-center">
+          <div className="flex flex-col justify-center z-10">
+            <div className="absolute top-14 right-0 text-xl font-bold text-white">
+              <button className="mr-8 text-teal-300 hover:text-white" onClick={()=>{navigate("/Signin")}}>
+                Signin</button>
+              <button className="mr-8 text-[#242424] cursor-default">Signup</button>
+            </div>
+            <div className="bg-transparent w-96 text-center h-max px-4">
+              <div className="flex gap-2">
+               <InputBox onChange={(e) => setFirstName(e.target.value)} placeholder="First Name" />
           <InputBox onChange={(e) => setLastName(e.target.value)} placeholder="Last Name" />
+          </div>
           <InputBox onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
           <InputBox onChange={(e) => setUsername(e.target.value)} placeholder="Email" />
           <div className="pt-4">
-            <Button label={"Sign up"} onClick={async () =>{
+            <ButtonSmall label={"Sign up"} onClick={async () =>{
               const response = await axios.post(`${process.env.PUBLIC_URL}/user/signup`,{
                 firstName,
                 lastName,
@@ -54,15 +68,30 @@ const Signup = () => {
                 password
               })
               localStorage.setItem("token",response.data.token)
-              navigate("/Dashboard")
+              navigate("/Home")
             }} />
+          
           </div>
-          <BottomWarning
-            label={"Already have an account?"}
-            buttonText={"Sign in"}
-            to={"/signin"}
-          />
+            </div>
+          </div>
         </div>
+      </div>
+      <div>
+        <img
+          src={subtract}
+          alt="design pic1"
+          className=" absolute object-center right-0 z-1 h-screen w-7/12 object-cover"
+        />
+        <img
+          src={union}
+          alt="design pic2"
+          className=" absolute object-center right-0 z-2 h-screen w-6/12 object-cover"
+        />
+        <img
+          src={buttonCut}
+          alt="design pic3"
+          className=" absolute object-center top-5 right-0 z-3"
+        />
       </div>
     </div>
   );
