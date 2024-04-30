@@ -1,30 +1,48 @@
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const { jwt_secret } = require("../config");
-const JWT_SECRET  = jwt_secret;
+const express = require("express"); // Import Express module as express
+const jwt = require("jsonwebtoken"); // Import JsonWebToken module as jwt
 
-const { authMiddleware } = require("../middleware");
-const { Account, Transaction } = require("../db");
-const { default: mongoose } = require("mongoose");
+const { authMiddleware } = require("../middleware"); // Import Authentication middleware
+const { Account, Transaction } = require("../db"); // Import Databases from config file
+const mongoose = require("mongoose"); // Import Mongoose module as mongoose
 
-const router = express.Router();
+const router = express.Router(); // Creates an Express router instance
 
+// This route returns the logged in user's balance
+// The `authMiddleware` function handles the authentication checks before proceeding.
 router.get("/balance", authMiddleware, async (req, res) => {
-  const account = await Account.findOne({
-    userId: req.userId,
-  });
+  // upon successful authentication user is searched in Account data base using userId
 
-  res.json({
-    balance: account.balance,
-  });
+  try {
+    // Find User Account
+    const account = await Account.findOne({ userId: req.userId });
+    // If user not present in Account DB return error code and message
+    if (!account) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    // Return Balance:
+    res.json({ balance: account.balance });
+  } catch (error) {
+    // Error Handling (General)
+    console.error(error); // Log the error for debugging
+    return res.status(500).json({ message: "Internal server error" });
+  }
 });
 
+// This route is used to transfer funds from one user to another
+// The `authMiddleware` function handles the authentication checks before proceeding.
 router.post("/transfer", authMiddleware, async (req, res) => {
-  const date = new Date().toLocaleDateString();
-  const time = new Date().toLocaleTimeString();
+  //Extract Transfer Data from Request body
+  const {
+    amount,
+    to,
+    from,
+    toFirstName,
+    toLastName,
+    fromFirstName,
+    fromLastName,
+  } = req.body;
 
-  const { amount, to,from ,toFirstName,toLastName,fromFirstName,fromLastName } = req.body;
-  console.log(req.body);
+  // Create Transaction entry as transaction is initiated
   const transaction = await Transaction.create({
     toAccount: to,
     toFirstName: toFirstName,
@@ -33,56 +51,80 @@ router.post("/transfer", authMiddleware, async (req, res) => {
     fromLastName: fromLastName,
     fromAccount: from,
     amount: amount,
-    date: date,
-    time: time,
-  })
-  const transactionId = transaction._id
+    // Get transaction date and time to log in the database
+    date: new Date().toLocaleDateString(),
+    time: new Date().toLocaleTimeString(),
+  });
+  // save the transaction details to update the transaction after completion
+  const transactionId = transaction._id;
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  try {
+    // Initiate Database Session
+    // Reason : if the transaction fails midway then the whole process reverts back to normal
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-  // Fetch the accounts within the transaction
-  const account = await Account.findOne({ userId: from }).session(
-    session
-  );
+    // Fetch the account details of the user
+    const account = await Account.findOne({ userId: from }).session(session);
 
-  if (!account || account.balance < amount) {
-    await session.abortTransaction();
-    return res.status(400).json({
-      message: "Insufficient balance",
-    });
-  }
+    // check if the account has the amount to be transferred
+    if (!account || account.balance < amount) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        message: "Insufficient balance",
+      });
+    }
 
-  const toAccount = await Account.findOne({ userId: to }).session(session);
+    // check if the recipient account is present
+    const toAccount = await Account.findOne({ userId: to }).session(session);
 
-  if (!toAccount) {
-    await session.abortTransaction();
-    await Transaction.updateOne({_id:transactionId},{message:"Invalid account"}).session(session);
-    return res.status(400).json({
-      message: "Invalid account",
-    });
-  }
+    if (!toAccount) {
+      await session.abortTransaction();
+      await Transaction.updateOne(
+        { _id: transactionId },
+        { message: "Invalid account" }
+      ).session(session);
+      return res.status(400).json({
+        message: "Invalid account",
+      });
+    }
 
-  // Perform the transfer
-  await Account.updateOne(
-    { userId: from },
-    { $inc: { balance: -amount } }
-  ).session(session);
-  await Account.updateOne(
-    { userId: to },
-    { $inc: { balance: amount } }
-  ).session(session);
-  await Transaction.updateOne(
-    {_id:transactionId},
-    {completed:true,message:"Completed transaction"}
+    // Perform the transfer:
+    // 1. deduct amount from sender
+    await Account.updateOne(
+      { userId: from },
+      { $inc: { balance: -amount } }
     ).session(session);
 
-  // Commit the transaction
-  await session.commitTransaction();
-  res.json({
-    message: "Transfer successful",
-    transactionId: transaction._id,
-  });
+    // 2. Add amount from sender
+    await Account.updateOne(
+      { userId: to },
+      { $inc: { balance: amount } }
+    ).session(session);
+
+    // 3. Update the transaction log
+    await Transaction.updateOne(
+      { _id: transactionId },
+      { completed: true, message: "Completed transaction" }
+    ).session(session);
+
+    // Commit the transaction
+    await session.commitTransaction();
+    res.json({
+      message: "Transfer successful",
+      transactionId: transaction._id,
+    });
+  } catch (error) {
+    //Error Handling
+    console.error(error);
+
+    // Abort transaction on any error
+    await session.abortTransaction();
+    return res.status(500).json({ message: "Internal server error" });
+  } finally {
+    // Close Session
+    session.endSession();
+  }
 });
 
 module.exports = router;

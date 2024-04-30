@@ -1,4 +1,4 @@
-const zod = require("zod");
+const zod = require("zod"); // Import zod module as zod
 
 //Schema for taking New Sign Up
 const createUser = zod.object({

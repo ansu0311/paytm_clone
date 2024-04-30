@@ -1,10 +1,13 @@
-const mongoose = require("mongoose");
+const mongoose = require("mongoose");  // Import Express module as express
+// Load credentials from a secure environment variable file (.env)
 const { username, password } = require("./config");
 
+// Connect to MongoDB using a connection string with credentials
 mongoose.connect(
     `mongodb+srv://${username}:${password}@cluster0.xxdaiuv.mongodb.net/`    
   );
 
+  // Mongoose Schemas
 const userSchema =new mongoose.Schema({
     username: {
         type: String,
@@ -34,6 +37,7 @@ const userSchema =new mongoose.Schema({
     }
 });
 
+// Mongoose Schemas
 const accountSchema = new mongoose.Schema({
     userId:{
         type: mongoose.Schema.Types.ObjectId,
@@ -47,6 +51,7 @@ const accountSchema = new mongoose.Schema({
     }
 })
 
+// Mongoose Schemas
 const transactionSchema = new mongoose.Schema({
     toAccount:{
         type: mongoose.Schema.Types.ObjectId,
@@ -96,6 +101,7 @@ const transactionSchema = new mongoose.Schema({
     }
 })
 
+// Mongoose Models
 const User = mongoose.model("Users", userSchema)
 const Account = mongoose.model("Accounts",accountSchema)
 const Transaction = mongoose.model("Transaction",transactionSchema)
