@@ -6,6 +6,8 @@
 ## About
 This payment app, inspired by Paytm, makes digital transactions easy and secure. The project allowed hands-on experience with technologies like JWTs, session-based operations, and Tailwind.
 
+Link to live website : [FLUX](https://paytm-clone-gamma.vercel.app/)
+
 ## Table of Contents
 
 - [About](#about)
@@ -59,7 +61,7 @@ npm run dev
 Setting up the Frontend is pretty straightforward. Start by changing the working directory to the frontend folder.
 
 ```bash
-cd backend
+cd frontend
 ```
 Like the backend process, we create a .env file and add an environment variable specifying the URL of the backend server for API calls. We can use the .env.example file as a reference.
 
